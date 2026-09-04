@@ -10775,7 +10775,9 @@
         "条件間の差 Δρ は各主張に記した 2 run の spearman_rho の差であり、record は派生値をまだモデル化しない (TODO)。論文では両 run の値を \\airasval で引き、差は本文で述べる。",
         "入力統計の確認: 位相スクランブルは各画像・各チャネルの振幅スペクトル・平均・分散を厳密に保存し、画素シャッフルは各画像の画素値集合とチャネル間対応を厳密に保存する（ローカルで検証済み; run の scores.json に入力統計 mean/std/lag1 自己相関を監査用に記録する。これは指標ではない）。",
         "スケール: sanity = 10 アーキ / 1 シード、pilot = 200 / 3 シード、full = 1,000 / 3 シード。実行環境: Seyval managed compute cpu-general (x86_64, GPU なし)、torch 2.11.0 CPU wheel を uv.lock で固定、自前 Dockerfile。データは data/ に同梱（NAS-Bench-201 の真値表部分集合と各シードの CIFAR-10 バッチ）。",
-        "先行研究: https://github.com/auto-res2/matsuzawa-20260903-zc-proxy-input-invariance（同一アーキ集合・同一シード・同一 jacob_cov 実装; GB200 上で ρ_real = 0.7146, ρ_rand = 0.6042）。"
+        "先行研究: https://github.com/auto-res2/matsuzawa-20260903-zc-proxy-input-invariance（同一アーキ集合・同一シード・同一 jacob_cov 実装; GB200 上で ρ_real = 0.7146, ρ_rand = 0.6042）。",
+        "図: rho_by_condition.png（棒が軸範囲をはみ出す描画）は rho_by_condition_bars.png（clip 付き、同じ宣言データ）で置き換えた。論文は後者のみを参照する。両方の宣言と描画物は検証対象として残す。",
+        "全 5 run の結果は commit 8b92355 上で各 1 回の dispatch（Seyval managed cpu-general）。comparative-3-jacobcov-randinput の最初の dispatch (4e255405) はクラスタ容量不足で Pod がスケジュールされず failure_origin=system で失敗し、同一コミット・同一引数で再投入した run 5dc57d84 の出力を報告する。"
       ]
     }
   ]
