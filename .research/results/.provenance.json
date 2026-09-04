@@ -1,0 +1,15 @@
+{
+  "dirs": {
+    "proposed-jacobcov-phasescr": {
+      "execution_id": "b5b3893e-bdb8-4f5f-925d-df1117b03735",
+      "commit_hash": "8b92355b6fa17c0501775a40371498377958d0be",
+      "overrides": {
+        "run": "proposed-jacobcov-phasescr",
+        "results_dir": ".research/results",
+        "mode": "full",
+        "evaluate": "true"
+      },
+      "parameters": {}
+    }
+  }
+}
