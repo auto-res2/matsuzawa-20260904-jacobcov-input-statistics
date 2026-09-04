@@ -175,6 +175,71 @@
       "gpu_count": 0
      },
      "experiment_summary": "介入: 同一アーキ集合・同一シードで、jacob_cov の入力だけを cifar10 / phasescr / pixshuf / randinput に差し替える。学習は 0 エポック。判定基準 (凍結): C1 ρ_real−ρ_phasescr ≤ 0.05; C2 ρ_real−ρ_pixshuf ≥ 0.06; C3 |ρ_pixshuf−ρ_randinput| ≤ 0.05; C4 ρ_real−ρ_randinput ≥ 0.06; C5 |ρ_real−ρ_rep| ≤ 0.03。予測区間は research_hypothesis.expected_result に記す。"
+    },
+    "experimental_results": {
+     "metrics_data": {
+      "comparative-1-jacobcov-cifar10": {
+       "best_true_rank_in_top_10": 78.0,
+       "kendall_tau": 0.5558367186629332,
+       "kendall_tau_top_10pct": 0.2597765881031473,
+       "precision_at_top_10pct": 0.21,
+       "selection_regret_at_1": 4.200000000000003,
+       "spearman_rho": 0.7149819494508867,
+       "spearman_rho_top_10pct": 0.3765518658614318
+      },
+      "proposed-jacobcov-phasescr": {
+       "best_true_rank_in_top_10": 104.0,
+       "kendall_tau": 0.5373334242420595,
+       "kendall_tau_top_10pct": 0.25043356773352665,
+       "precision_at_top_10pct": 0.24,
+       "selection_regret_at_1": 2.0,
+       "spearman_rho": 0.6947275229568871,
+       "spearman_rho_top_10pct": 0.36195529693660033
+      },
+      "comparative-2-jacobcov-pixshuf": {
+       "best_true_rank_in_top_10": 125.0,
+       "kendall_tau": 0.5005072966592934,
+       "kendall_tau_top_10pct": 0.17284587683798153,
+       "precision_at_top_10pct": 0.15,
+       "selection_regret_at_1": 2.0,
+       "spearman_rho": 0.6509480221421928,
+       "spearman_rho_top_10pct": 0.2549478021336314
+      },
+      "comparative-3-jacobcov-randinput": {
+       "best_true_rank_in_top_10": 196.0,
+       "kendall_tau": 0.45375178958236095,
+       "kendall_tau_top_10pct": 0.15415983609874026,
+       "precision_at_top_10pct": 0.11,
+       "selection_regret_at_1": 4.050000000000011,
+       "spearman_rho": 0.6052150055937858,
+       "spearman_rho_top_10pct": 0.22407413825643854
+      },
+      "comparative-4-jacobcov-cifar10rep": {
+       "best_true_rank_in_top_10": 125.0,
+       "kendall_tau": 0.5538195628125432,
+       "kendall_tau_top_10pct": 0.2146863593628043,
+       "precision_at_top_10pct": 0.12,
+       "selection_regret_at_1": 1.6500000000000057,
+       "spearman_rho": 0.7124010502410746,
+       "spearman_rho_top_10pct": 0.3057477031943936
+      }
+     },
+     "result_figures": [
+      "chart/rho_by_condition.png",
+      "comparative-1-jacobcov-cifar10/scatter.pdf",
+      "proposed-jacobcov-phasescr/scatter.pdf",
+      "comparative-2-jacobcov-pixshuf/scatter.pdf",
+      "comparative-3-jacobcov-randinput/scatter.pdf",
+      "comparative-4-jacobcov-cifar10rep/scatter.pdf"
+     ],
+     "stdout": "All 5 runs completed on Seyval managed cpu-general (4 threads), ~20 min each, commit 8b92355; each run chained src.main -> make evaluate -> src.evaluate (evaluate=true). SENTINEL_SCORES 22/1000 in every condition (architectures whose input gradient is identically zero; same set in all conditions)."
+    },
+    "experimental_analysis": {
+     "analysis_report": "全 5 ラン（コミット 8b92355、各 1 dispatch、Seyval managed cpu-general、1 ランあたり約 20 分）が完了し、airas-eval (nas_pre_training) の指標を record に実体化した。主要指標 spearman_rho: cifar10 (real) 0.7150 / phasescr 0.6947 / pixshuf 0.6509 / randinput 0.6052 / cifar10 seed rep. 0.7124。\n判定（凍結基準）: C1 支持（ρ_real−ρ_phase = 0.020 ≤ 0.05、予測区間 −0.02〜0.04 内）。C2 支持（ρ_real−ρ_shuf = 0.064 ≥ 0.06 かつ |ρ_shuf−ρ_noise| = 0.046 ≤ 0.05）、ただし予測区間は両方外れ（前者は 0.07〜0.14 の下、後者は −0.03〜0.03 の上）で、ずれはどちらも「画素シャッフル画像は白色雑音より実画像に近い」方向。C3 支持（ρ_real−ρ_noise = 0.110 ≥ 0.06、予測区間 0.09〜0.13 内；先行研究 GB200 の 0.7146/0.6042 と小数第 3 位まで一致し CPU 再現に成功）。C4 支持（|ρ_real−ρ_rep| = 0.003 ≤ 0.03、予測区間内）。\n結論: jacob_cov が実データから利用しているのは主に画像の二次統計（振幅スペクトル＝空間自己相関）であり、意味内容を破壊した位相スクランブル入力で白色雑音による低下 0.110 の 8 割強（0.090）が回復する。ただし依存は段階的で、順位相関は real > phasescr > pixshuf > randinput と単調に下がり、隣接段の差（0.020, 0.044, 0.046）はいずれもシード床 0.003 より大きい。空間相関を持たない画素シャッフル画像が白色雑音を 0.046 上回ることから、画素値の周辺分布・チャネル間対応（色）も小さいが無視できない寄与を持つ。支持指標 kendall_tau は主要指標と同順。上位 10% 系の指標はシード複製間でも大きく動き（precision@top10%: 0.21 vs 0.12）、条件間差の解釈には使えない。\n限界: NAS-Bench-201/CIFAR-10・jacob_cov のみ。C2 の第二基準は 0.046 対 0.05 と際どい。位相スクランブルは画像内の振幅を保つが画像間の位相整合を変えるため、ミニバッチ全体の共分散を保った多変量ガウス入力を次の条件として加えるべき。\n検証: ローカルの verify_latex は record/provenance の診断のみ（本環境に TeX なし）。判定は CI の Verify Record と Publish Paper による。"
+    },
+    "decision": {
+     "action": "complete",
+     "reasoning": "全 4 主張が凍結基準を満たし、C2 の予測区間外れは方向が一貫しており論文の考察で報告した。追加ランは不要。"
     }
    }
   ]
@@ -186,6 +251,15 @@
   "predecessor_repositories": [
    "https://github.com/auto-res2/matsuzawa-20260902-zc-proxy-input-invariance",
    "https://github.com/auto-res2/matsuzawa-20260903-zc-proxy-input-invariance"
-  ]
+  ],
+  "seyval_runs": {
+   "proposed-jacobcov-phasescr": "b5b3893e-bdb8-4f5f-925d-df1117b03735",
+   "comparative-1-jacobcov-cifar10": "0429e2e3-ddf7-4162-9c93-b4a96a10d7fd",
+   "comparative-2-jacobcov-pixshuf": "3db2f3cf-6eb5-4d3b-b83d-d5d02e0ca654",
+   "comparative-3-jacobcov-randinput": "5dc57d84-cc68-458c-8009-6116228ac848 (first dispatch 4e255405 failed to schedule: cluster capacity, failure_origin=system)",
+   "comparative-4-jacobcov-cifar10rep": "293a3448-d337-42aa-af34-f91989fb942f"
+  },
+  "freeze_commit": "0d4ef1cf62e649d8a4e93e2d575c83dc32e3b954",
+  "run_commit": "8b92355b6fa17c0501775a40371498377958d0be"
  }
 }

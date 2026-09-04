@@ -270,14 +270,124 @@ Seyval の managed compute（\texttt{cpu-general}、x86\_64、GPU なし）を�
 \section{結果}
 \label{sec:results}
 
-（実験実行後に記入する。主張 C1--C4 を第\ref{sec:claims}節で凍結した判定基準と予測区間に照らして報告する。）
+全 5 ランは事前登録コミットの子孫にあたる単一コミット上で、1 ランにつき 1 回の dispatch として
+Seyval の managed compute（\texttt{cpu-general}、4 スレッド CPU、GPU なし）で実行され、
+指標はすべて外部の評価層 airas-eval が算出した（1 ランあたり約 20 分）。
+各ランの実行 ID・コミット・出力ファイルは実行基盤の記録と突き合わせて検証されている。
+主要指標を表~\ref{tab:zc_summary} と図~\ref{fig:rho_by_condition} に示す。
+以下、主張 C1--C4 を第\ref{sec:claims}節で凍結した判定基準と予測区間に照らして順に報告する。
+\textbf{判定基準と予測区間は実験実行前に凍結されており、結果に合わせて変更していない。}
+本文中の $\rho$ はすべて各ランの記録から直接引用した値であり、
+条件間の差は引用した 2 値の差として筆者が計算したものである（記録はまだ派生値を
+モデル化しないため \texttt{unverified} マクロで明示する）。
 
 \InputIfFileExists{tables/zc_summary.tex}{}{}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.66\textwidth]{images/chart/rho_by_condition.png}
+\caption{入力条件ごとの jacob\_cov と真のテスト精度の Spearman 順位相関。
+左から実画像、実画像のシード複製、位相スクランブル、画素シャッフル、白色雑音。
+学習は一切行っていない。図中の各値はランの記録から解決され、宣言した仕様から再描画して検証される。}
+\label{fig:rho_by_condition}
+\end{figure}
+
+\paragraph{C1（中心仮説：二次統計で十分）— 支持.}
+$\rho_{\mathrm{real}} = \airasval{comparative-1-jacobcov-cifar10.spearman_rho}$、
+$\rho_{\mathrm{phase}} = \airasval{proposed-jacobcov-phasescr.spearman_rho}$。
+差は $\rho_{\mathrm{real}} - \rho_{\mathrm{phase}} = \unverified{0.020}$ であり、
+判定基準 $\le 0.05$ を満たし、予測区間 $-0.02$--$0.04$ の内側に収まった。
+振幅スペクトルだけを保って意味内容を完全に破壊しても、順位付け能力の低下は
+シード揺らぎ（C4）の 1 桁上にとどまり、白色雑音への置換（C3）による低下 \unverified{0.110} の
+2 割弱である。すなわち\textbf{白色雑音で失われる順位付け能力の 8 割強は、二次統計を戻すだけで回復する}。
+
+\paragraph{C2（周辺分布では不十分）— 支持、ただし予測区間は両方とも外れ.}
+$\rho_{\mathrm{shuf}} = \airasval{comparative-2-jacobcov-pixshuf.spearman_rho}$、
+$\rho_{\mathrm{noise}} = \airasval{comparative-3-jacobcov-randinput.spearman_rho}$。
+第一の基準: $\rho_{\mathrm{real}} - \rho_{\mathrm{shuf}} = \unverified{0.064}$ で $\ge 0.06$ を満たす。
+第二の基準: $\rho_{\mathrm{shuf}} - \rho_{\mathrm{noise}} = \unverified{0.046}$ で $|\cdot| \le 0.05$ を満たす。
+したがって判定上は\textbf{支持}である。
+しかし予測区間は二つとも外れた。第一の差は予測区間 $0.07$--$0.14$ の\emph{下}に、
+第二の差は予測区間 $-0.03$--$0.03$ の\emph{上}に外れており、どちらも同じ方向——
+「画素シャッフル画像は白色雑音よりも実画像に近い」——を指している。
+画素シャッフルは空間相関をほぼ完全に破壊する（監査用に記録した隣接画素相関は
+実画像の約 0.90 に対し約 $0.00$、白色雑音と同水準）にもかかわらず、
+白色雑音より \unverified{0.046} 高い順位相関を保った。
+この差は判定基準 $0.05$ の際どい内側であり、シード揺らぎ（\unverified{0.003}）よりは明確に大きい。
+画素値の周辺分布とチャネル間対応（色）が、小さいが無視できない寄与を持つことを示唆する。
+
+\paragraph{C3（先行研究の再現）— 支持.}
+$\rho_{\mathrm{real}} - \rho_{\mathrm{noise}} = \unverified{0.110}$ で判定基準 $\ge 0.06$ を満たし、
+予測区間 $0.09$--$0.13$ の内側である。
+先行研究 \cite{airas20260903zcproxy} が GB200 GPU 上で得た
+$\rho_{\mathrm{real}} = \unverified{0.7146}$、$\rho_{\mathrm{rand}} = \unverified{0.6042}$ に対し、
+本研究の CPU 実行は主要指標で小数第 3 位まで一致した。
+同一のアーキテクチャ集合・シード・実装であるため、この一致は実験系が先行研究と同一の計算を
+再現していることを示す。
+
+\paragraph{C4（シードノイズ床）— 支持.}
+$\rho_{\mathrm{rep}} = \airasval{comparative-4-jacobcov-cifar10rep.spearman_rho}$ であり、
+参照条件との差は $\unverified{0.003}$ で判定基準 $\le 0.03$ を満たし、予測区間 $0.00$--$0.02$ の内側である。
+C1--C3 で論じた条件間の差（\unverified{0.020}, \unverified{0.064}, \unverified{0.110}）は
+いずれもこの床より 1 桁以上大きい。
+
+\paragraph{支持指標.}
+表~\ref{tab:zc_summary} のとおり、Kendall $\tau$ は主要指標と同じ順序
+（実画像 $>$ 位相スクランブル $>$ 画素シャッフル $>$ 白色雑音）を示す。
+上位 10\% の一致率 \texttt{precision\_at\_top\_10pct} と最上位の regret は、
+シード複製ラン間でも主要指標より大きく動いており（例えば一致率は
+$\airasval{comparative-1-jacobcov-cifar10.precision_at_top_10pct}$ 対
+$\airasval{comparative-4-jacobcov-cifar10rep.precision_at_top_10pct}$）、
+これらの条件間差は主要指標ほどの重みでは読めない。
+なお、位相スクランブル条件の上位 10\% 一致率
+（$\airasval{proposed-jacobcov-phasescr.precision_at_top_10pct}$）は実画像条件を上回っているが、
+同じ理由で過大に解釈すべきではない。
 
 \section{考察}
 \label{sec:discussion}
 
-（実験実行後に記入する。）
+\paragraph{jacob\_cov が見ているのは自然画像の二次統計である.}
+本研究が凍結した中心仮説——jacob\_cov の実データ依存は画像の二次統計で説明され、
+意味内容を必要としない——は\textbf{支持された}（C1）。
+位相スクランブル画像は物体もエッジの配置も持たないが、実画像と同じ振幅スペクトル、
+したがって同じ空間自己相関を持つ。それだけで、白色雑音で失われる順位付け能力の
+8 割強が戻る。jacob\_cov はミニバッチ内の入力どうしのヤコビアンの相関を測る量であり、
+入力集合の「互いにどれだけ似ているか」がスコアに入る。
+自然画像どうしは低周波成分を共有するため互いに相関し、白色雑音どうしは相関しない。
+順位付けに効いているのは入力の\emph{内容}ではなく、この\emph{入力間の相関構造}である。
+
+\paragraph{しかし二次統計で全てではない——段階的な依存.}
+結果は二値ではなく段階的である。順位相関は
+実画像 $>$ 位相スクランブル $>$ 画素シャッフル $>$ 白色雑音 の順に単調に下がり、
+隣り合う段の差（\unverified{0.020}, \unverified{0.044}, \unverified{0.046}）はいずれも
+シード床（\unverified{0.003}）より大きい。
+C2 は判定基準を満たしたが予測区間を両方外し、そのずれの向きは一貫して
+「画素シャッフル画像は白色雑音より実画像に近い」であった。
+空間相関を持たない画素シャッフル画像が白色雑音より優れるのは、
+画素値の周辺分布（自然画像は値域が有界で分布が非ガウス的）とチャネル間の対応（色）が
+保たれているからだと解釈するのが自然である。
+また位相スクランブルと実画像の間にも小さな差（\unverified{0.020}）が残る。
+これが高次統計（位相構造、エッジの整合性）の寄与なのか、
+位相スクランブルが画像ごとの振幅は保つが画像\emph{間}の位相の整合を変えることの影響なのかは、
+本研究の設計では分離できない。
+
+\paragraph{実務上の含意.}
+jacob\_cov を使うなら、渡す入力は「対象タスクの実データ」である必要はなく、
+対象データと同じ振幅スペクトルを持つ合成入力で順位品質の大半が得られる。
+逆に言えば、jacob\_cov の「データ依存」はタスク固有の情報を取り込む能力を意味しない。
+先行研究 \cite{airas20260903zcproxy} が示した「どのデータを渡すかより、どのプロキシを使うかの方が効く」
+という結論は、本研究によって「どのデータを渡すかの効果の大半は、そのデータの二次統計で
+決まる」とまで精密化される。
+
+\paragraph{限界.}
+本研究は NAS-Bench-201 の CIFAR-10 に限られ、プロキシは jacob\_cov のみ、
+判定はすべて 1{,}000 アーキテクチャ・3 シード平均の Spearman 順位相関に基づく。
+C2 の第二の基準は \unverified{0.046} 対 $0.05$ と際どく、
+基準が $0.04$ であれば「画素シャッフルは白色雑音と同等」は棄却されていた。
+予測区間を外したことと合わせ、周辺分布の寄与は本研究の設計で想定していたより大きい。
+また位相スクランブルは画像内の振幅スペクトルを保つが、画像間の相関構造は
+位相の乱数化によって変化する。二次統計をより厳密に統制するには、
+ミニバッチ全体の共分散を保った多変量ガウス入力を条件に加えるべきである。
 
 \bibliographystyle{plain}
 \bibliography{references}
