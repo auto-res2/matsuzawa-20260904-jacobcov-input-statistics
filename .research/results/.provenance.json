@@ -21,6 +21,17 @@
         "evaluate": "true"
       },
       "parameters": {}
+    },
+    "comparative-2-jacobcov-pixshuf": {
+      "execution_id": "3db2f3cf-6eb5-4d3b-b83d-d5d02e0ca654",
+      "commit_hash": "8b92355b6fa17c0501775a40371498377958d0be",
+      "overrides": {
+        "run": "comparative-2-jacobcov-pixshuf",
+        "results_dir": ".research/results",
+        "mode": "full",
+        "evaluate": "true"
+      },
+      "parameters": {}
     }
   }
 }
