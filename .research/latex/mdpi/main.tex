@@ -1,0 +1,284 @@
+% ============================================================================
+% 事前登録版 (preregistration). このコミットの時点で実験は一切実行されていない。
+% 主張 C1-C4、判定基準、予測区間はすべてここで凍結される。
+% 実験値は airasval マクロ（<run_id>.<metric>）のみで書かれ、record.json の宣言と
+% 各 run の metrics.json から update_record が values.tex を生成して初めて実体化する。
+% 実験はすべてこのコミットの子孫で実行される。
+% ============================================================================
+\documentclass[11pt]{article}
+\usepackage{luatexja-fontspec}
+\setmainjfont{IPAexMincho}
+\setsansjfont{IPAexGothic}
+\usepackage[margin=25mm]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+
+% 実験前は values.tex が存在しない (update_record が実験後に生成する)。
+% その間、各値が ??airasval:key?? として描画されるのが正しい事前登録状態である。
+\InputIfFileExists{values.tex}{}{}
+\providecommand{\airasval}[1]{\textbf{??airasval:\detokenize{#1}??}}
+\providecommand{\unverified}[1]{#1}
+
+\title{jacob\_cov は画像の何を見ているか\\
+\large 位相スクランブルと画素シャッフルによる zero-cost proxy の入力統計依存性の事前登録付き検証}
+\author{AIRAS 自動研究システム\\
+\small 実験実行（予定）: Seyval managed compute (cpu-general, x86\_64, GPU なし)\ \ /\ \ 評価: airas-eval \texttt{nas\_pre\_training}}
+\date{2026年9月4日（事前登録版：実験実行前に凍結）}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+学習不要のニューラルアーキテクチャ探索で用いられる zero-cost proxy のうち、
+jacob\_cov \cite{mellor2021naswot,abdelfattah2021zerocost} はミニバッチ内の異なる入力が誘導する
+ヤコビアンの相関から計算され、先行研究 \cite{airas20260903zcproxy} は入力を実 CIFAR-10 から
+$N(0,1)$ 白色雑音に置換すると真の精度との Spearman 順位相関が \unverified{0.110} 低下することを示した。
+しかし、この「実データ依存」が画像の\emph{何}に由来するかは未解明である。
+本研究は、同一の 1{,}000 アーキテクチャ（NAS-Bench-201 \cite{dong2020nasbench201}）と同一の初期化シードに対し、
+jacob\_cov に渡す入力の統計構造だけを 4 段階に統制する：実画像、
+振幅スペクトルを厳密に保ち位相を乱した位相スクランブル画像（二次統計は保存、意味内容は破壊）、
+画素値の周辺分布を厳密に保ち空間相関を破壊した画素シャッフル画像、そして白色雑音である。
+中心となる主張は、位相スクランブル入力が実画像と同等の順位相関を与え（低下 0.05 以下）、
+画素シャッフル入力が白色雑音と同等まで低下する（実画像から 0.06 以上の低下）ことである。
+これが成り立てば、jacob\_cov が実データから利用しているのは自然画像の二次統計
+（$1/f$ 型パワースペクトル \cite{vanderschaaf1996power}）であり、意味内容は不要だということになる。
+アーキテクチャの学習は一切行わず（0 エポック）、真値はベンチマークの公表値を参照する。
+すべての指標は外部の固定された評価層 airas-eval が算出し、実験コードは指標を一切計算しない。
+実行環境は GPU を持たない汎用 CPU であり、本研究の全 5 ランは CPU のみで完結する。
+\end{abstract}
+
+\section{はじめに}
+
+zero-cost proxy（以下 ZC プロキシ）は、未学習ネットワークに学習データの単一ミニバッチを
+1 回だけ通し、その活性や勾配からアーキテクチャの良さを採点する \cite{abdelfattah2021zerocost,mellor2021naswot}。
+その設計思想は「入力に対するネットワークの応答が学習後の性能を予告する」という仮定に立つ。
+先行研究 \cite{airas20260903zcproxy} はこの仮定を入力側から直接検証し、
+NAS-Bench-201 の 1{,}000 アーキテクチャにおいて、jacob\_cov は実データを実質的に利用している
+（実 CIFAR-10 $\to$ $N(0,1)$ 白色雑音で $\Delta\rho = \unverified{0.110}$、
+シード複製の差 \unverified{0.002} を大きく超える）一方、snip は利用しておらず（$\Delta\rho = \unverified{-0.048}$）、
+入力を一切見ない synflow が最良のプロキシであることを示した。
+
+この結果は次の問いを残す。jacob\_cov が利用している「実データの情報」とは何か。
+候補は二つある。
+
+\begin{enumerate}
+\item \textbf{二次統計（低次の画像統計）}。自然画像はおよそ $1/f^2$ のパワースペクトルを持ち
+\cite{vanderschaaf1996power}、隣接画素が強く相関する。jacob\_cov はミニバッチ内の入力どうしの
+ヤコビアンの相関を測るため、入力の空間相関構造が直接スコアに入る。
+この情報は意味内容を持たない乱数場でも再現できる。
+\item \textbf{意味内容}。物体やエッジの配置、クラスに固有の構造といった高次の情報。
+これは二次統計を保っただけでは再現できない。
+\end{enumerate}
+
+先行研究の白色雑音置換も Mellor ら \cite{mellor2021naswot} の乱数入力アブレーションも、
+二次統計と意味内容を同時に破壊しているため、両者を区別できない。
+本研究は、実画像から二次統計だけを残した入力（位相スクランブル）と、
+周辺分布だけを残した入力（画素シャッフル）を作り、jacob\_cov の順位付け能力が
+どちらで保たれるかを、事前に凍結した判定基準に照らして測る。
+
+\section{関連研究と本研究が埋める空白}
+
+\paragraph{ゼロコストプロキシ.}
+Abdelfattah ら \cite{abdelfattah2021zerocost} は枝刈り文献の saliency 指標（snip \cite{lee2019snip}、
+grasp、synflow \cite{tanaka2020synflow}、fisher）をネットワーク全体の採点に転用し、
+Mellor ら \cite{mellor2021naswot} の jacob\_cov と合わせて NAS-Bench-201 の全 15{,}625 モデルで評価した。
+報告された CIFAR-10 の Spearman 順位相関は synflow \unverified{0.74}、jacob\_cov \unverified{0.73}
+である（同論文 Table~1 の引用であり本研究の測定値ではない）。
+Krishnakumar ら \cite{krishnakumar2022nbsz} は 13 のプロキシを 28 タスクで統一実装のもと評価し、
+cell size などアーキテクチャ側のバイアスを分析したが、入力データ側の寄与は分析していない。
+Yang ら \cite{yang2023revisiting} は training-free 指標の順位付け能力の大部分が \#Param との相関に
+由来することを示した。
+
+\paragraph{jacob\_cov の定義と入力依存.}
+Mellor ら \cite{mellor2021naswot} のスコアはミニバッチの各入力に対する ReLU 活性パターン
+（あるいはその連続版としての入力ヤコビアン）の相互相関行列の対数行列式に基づく。
+入力どうしが「区別しやすい」ネットワークほど高いスコアを得る。
+したがって定義上、入力\emph{集合}の構造——入力どうしがどれだけ似ているか——がスコアに入る。
+同論文は正規乱数入力でも「傾向はほぼ変わらない」と 10 アーキテクチャの箱ひげ図で述べたが、
+先行研究 \cite{airas20260903zcproxy} が 1{,}000 アーキテクチャの順位相関として定量すると、
+差は事前に置いた基準 0.10 を超えた。
+
+\paragraph{自然画像統計と位相スクランブル.}
+自然画像の振幅スペクトルは空間周波数 $f$ に対しおよそ $1/f$ に従い、
+パワースペクトルは $1/f^2$ に従う \cite{vanderschaaf1996power}。
+フーリエ振幅を保って位相を乱す位相スクランブルは、視覚科学において
+「二次統計を保ちつつ意味内容を除く」標準的な統制刺激である。
+本研究はこれをプロキシの入力統制に転用する。
+
+\paragraph{本研究の位置づけ.}
+先行研究が「jacob\_cov は実データを使っているか」に答えたのに対し、
+本研究は「実データの何を使っているか」に答える。
+アーキテクチャ集合・初期化シード・jacob\_cov の実装・評価層は先行研究と同一であり、
+白色雑音条件と実データ条件の再実行を含めることで、結果を先行研究に直接接続する。
+
+\section{仮説と予測}
+\label{sec:claims}
+
+以下の主張 C1--C4 は\textbf{実験実行前に凍結}したものである。
+各主張について、判定基準（これを満たさなければ棄却）と予測区間（期待される値の範囲）を分けて記す。
+判定基準は反証線であり、予測区間は期待である。
+予測区間を外れた結果は、判定基準を満たしていても第\ref{sec:discussion}節で論じる。
+以下 $\rho_{\mathrm{real}}, \rho_{\mathrm{phase}}, \rho_{\mathrm{shuf}}, \rho_{\mathrm{noise}}, \rho_{\mathrm{rep}}$ は
+それぞれ実画像・位相スクランブル・画素シャッフル・白色雑音・実画像シード複製の各ランにおける、
+jacob\_cov スコアと真のテスト精度の Spearman 順位相関である。
+
+\begin{description}
+
+\item[\textbf{C1}]（中心仮説：二次統計で十分）
+位相スクランブル入力で計算した jacob\_cov の順位相関は、実画像入力の値と実質的に等しい。\\
+\textbf{判定基準}: $\rho_{\mathrm{real}} - \rho_{\mathrm{phase}} \le 0.05$。
+これを超えれば、振幅スペクトルが保存されていても順位付け能力が失われることになり、
+jacob\_cov は二次統計以外の情報（意味内容）を利用していると解釈され、本主張は棄却される。\\
+\textbf{予測区間}: $\rho_{\mathrm{real}} - \rho_{\mathrm{phase}} = -0.02$--$0.04$。
+下限が負なのは、位相スクランブルが画像ごとの振幅を保つため、
+実画像と同程度のばらつきを持つ「ノイズ床」程度の差しか生じないと見込むからである。
+根拠は先行研究のシード複製差（\unverified{0.002}）と、jacob\_cov が入力間の相関構造を測るという定義。\\
+\textbf{実測}: $\rho_{\mathrm{real}} = \airasval{comparative-1-jacobcov-cifar10.spearman_rho}$、
+$\rho_{\mathrm{phase}} = \airasval{proposed-jacobcov-phasescr.spearman_rho}$。
+
+\item[\textbf{C2}]（周辺分布では不十分）
+画素シャッフル入力で計算した jacob\_cov の順位相関は、実画像入力より 0.06 以上低く、
+かつ白色雑音入力との差は 0.05 以内である。\\
+\textbf{判定基準}: $\rho_{\mathrm{real}} - \rho_{\mathrm{shuf}} \ge 0.06$ かつ
+$|\rho_{\mathrm{shuf}} - \rho_{\mathrm{noise}}| \le 0.05$。どちらかを満たさなければ棄却。
+前者が成り立たなければ空間相関の破壊は順位付け能力を損なわない（＝二次統計は重要でない）ことになり、
+後者が成り立たなければ画素値の周辺分布（色の分布）自体が寄与していることになる。\\
+\textbf{予測区間}: $\rho_{\mathrm{real}} - \rho_{\mathrm{shuf}} = 0.07$--$0.14$、
+$\rho_{\mathrm{shuf}} - \rho_{\mathrm{noise}} = -0.03$--$0.03$。
+根拠は先行研究の白色雑音との差 \unverified{0.110}。画素シャッフル画像は白色雑音とほぼ同じ
+空間相関（隣接画素相関 $\approx 0$）を持つため、白色雑音と同水準になると予測する。\\
+\textbf{実測}: $\rho_{\mathrm{shuf}} = \airasval{comparative-2-jacobcov-pixshuf.spearman_rho}$。
+
+\item[\textbf{C3}]（先行研究の再現）
+白色雑音入力で計算した jacob\_cov の順位相関は、実画像入力より 0.06 以上低い。\\
+\textbf{判定基準}: $\rho_{\mathrm{real}} - \rho_{\mathrm{noise}} \ge 0.06$。
+下回れば先行研究の中心的結果が CPU 環境で再現されなかったことになり、
+C1・C2 の解釈の前提が崩れる。\\
+\textbf{予測区間}: $0.09$--$0.13$。先行研究は同一のアーキテクチャ集合・シード・実装で
+\unverified{0.110} を得ており、CPU と GPU の浮動小数点差だけがずれの源である。\\
+\textbf{実測}: $\rho_{\mathrm{noise}} = \airasval{comparative-3-jacobcov-randinput.spearman_rho}$。
+
+\item[\textbf{C4}]（シードノイズ床）
+実画像入力のまま初期化シードと入力バッチのドローだけを変えた複製ランの順位相関は、
+参照条件との差が 0.03 以内である。\\
+\textbf{判定基準}: $|\rho_{\mathrm{real}} - \rho_{\mathrm{rep}}| \le 0.03$。
+これを超える場合、C1--C3 で論じる差はシード揺らぎと同程度の可能性があり、解釈は保留される。\\
+\textbf{予測区間}: $0.00$--$0.02$。根拠は先行研究のシード複製差 \unverified{0.002}。\\
+\textbf{実測}: $\rho_{\mathrm{rep}} = \airasval{comparative-4-jacobcov-cifar10rep.spearman_rho}$。
+
+\end{description}
+
+C1 と C2 が同時に支持されれば、jacob\_cov の実データ依存は二次統計で説明され、意味内容を要しない。
+C1 が棄却され C2 が支持されれば、二次統計は必要だが十分ではない。
+C1 が支持され C2 が棄却されれば、順位付け能力は入力の空間構造にほとんど依らず、
+先行研究の白色雑音との差は別の要因（例えば周辺分布や値域）に由来する。
+
+\section{手法}
+
+\subsection{介入：入力統計の 4 段階統制}
+\label{sec:method}
+
+同一のアーキテクチャ集合・同一の初期化シードに対し、jacob\_cov に渡す入力テンソルだけを
+次の 4 条件に差し替え、それ以外を完全に固定する。
+すべての条件は同一シードの同一実バッチ（CIFAR-10 学習集合から 128 枚）から派生し、
+形状 $(128, 3, 32, 32)$ と dtype を共有する。
+
+\begin{itemize}
+\item \textbf{cifar10}（実画像）: 標準的な per-channel 正規化のみを施した実ミニバッチ。
+\item \textbf{phasescr}（位相スクランブル）: 各画像・各チャネルの 2 次元フーリエ変換
+$F = |F| e^{i\phi}$ について振幅 $|F|$ を厳密に保ち、位相 $\phi$ をシードで決まる実ガウス雑音場の
+位相に置き換えて逆変換する（1 画像につき 1 つの位相場を 3 チャネルで共有し、直流成分の位相は
+原画像のものを保つ）。実雑音場の位相は Hermite 対称性を満たすので逆変換は実数であり、
+Parseval の等式により各画像・各チャネルの平均と分散は厳密に保存される。
+すなわち\textbf{パワースペクトル（＝空間自己相関）は画像ごとに完全に保存され、意味内容は破壊される}。
+\item \textbf{pixshuf}（画素シャッフル）: 各画像について 1 つの空間置換（1{,}024 画素位置の順列）を
+シードで生成し、3 チャネルに共通に適用する。\textbf{画素値の集合（周辺分布）とチャネル間の対応
+（色）は厳密に保存され、空間相関は破壊される}（隣接画素相関はおよそ 0 になる）。
+\item \textbf{randinput}（白色雑音）: 同形状の $N(0,1)$ 乱数テンソル。先行研究と同一の生成法。
+\end{itemize}
+
+各条件の入力統計（平均・標準偏差・隣接画素相関）は監査用に各ランの出力に記録するが、
+これは指標ではない。ローカル検証では、位相スクランブルが各画像・各チャネルの振幅スペクトル・平均・
+分散を数値精度で保存し、画素シャッフルが各画像の画素値集合を厳密に保存することを確認している。
+
+\subsection{評価対象のプロキシ}
+
+jacob\_cov \cite{mellor2021naswot,abdelfattah2021zerocost} のみを対象とする。
+実装は先行研究 \cite{airas20260903zcproxy} と同一である：
+ミニバッチの各入力に対する出力和の入力ヤコビアン $J \in \mathbb{R}^{128 \times 3072}$ を取り、
+その行間の相関行列の固有値 $v_i$ から $-\sum_i \left[\log(v_i + k) + 1/(v_i + k)\right]$（$k = 10^{-5}$）を
+スコアとする。相関が定義できないアーキテクチャ（入力勾配が恒等的に 0 になるもの）には
+全条件共通の番兵値を与え最下位に置く。
+snip と synflow は先行研究で入力非依存と示されたため本研究では扱わない。
+プロキシの計算にラベルは一切使用しない。
+
+\subsection{統制}
+
+\begin{enumerate}
+\item \textbf{同一バッチからの派生}: phasescr と pixshuf は cifar10 と同じ 128 枚から作られ、
+乱数の種は初期化シードと共通である。条件間で異なるのは入力テンソルの統計構造だけである。
+\item \textbf{先行研究の再実行}（C3）: cifar10 と randinput の 2 ランは先行研究と同一条件であり、
+CPU 環境での再現性を担保するとともに、C1・C2 の差を先行研究の尺度に接続する。
+\item \textbf{シードノイズ床}（C4）: 入力を実画像に保ったまま初期化シードとバッチのドローを
+$[0,1,2]$ から $[10,11,12]$ に変えた複製ランを走らせ、条件間の差をシード揺らぎと同じ尺度で比較する。
+\end{enumerate}
+
+\section{実験設計}
+\label{sec:setup}
+
+\paragraph{探索空間と真値.}
+NAS-Bench-201 \cite{dong2020nasbench201}（4 ノード 6 エッジの cell、演算 5 種、計 15{,}625 候補）。
+評価対象は、ソート済みの全 cell 文字列から固定シード 2026 で非復元一様抽出した 1{,}000 アーキテクチャであり、
+先行研究と同一の集合である。真値は同ベンチマークが公表する CIFAR-10 のテスト精度（\texttt{eval\_acc1es}）
+を参照するのみで、\textbf{アーキテクチャの学習は一切行わない}（0 エポック、順伝播・逆伝播 各 1 回のみ）。
+1{,}000 件の真値表と、各シードの 128 枚バッチ（uint8）はリポジトリに同梱し、
+クラスタのキャッシュにもダウンロードにも依存しない。コミットハッシュが入力データを固定する。
+
+\paragraph{ラン.}
+jacob\_cov $\times$ 入力条件 4 種に、シード複製ランを加えた計 5 ラン。
+各ランは 3 つの初期化シードでプロキシを計算し、その平均をアーキテクチャのスコアとする
+（シードは重み初期化・バッチ選択・位相場・置換・乱数テンソルのすべてを決める）。
+ラン ID は \texttt{proposed-jacobcov-phasescr}（中心となる介入条件）、
+\texttt{comparative-1-jacobcov-cifar10}、\texttt{comparative-2-jacobcov-pixshuf}、
+\texttt{comparative-3-jacobcov-randinput}、\texttt{comparative-4-jacobcov-cifar10rep} である。
+各ランは 1 回の dispatch で採点から評価層の実行までを通し、実行モードは
+\airasval{proposed-jacobcov-phasescr.params.mode}（記録に宣言した条件を引用）である。
+各ランの結果は実行基盤の記録（実行 ID、コミット、出力ファイル）と突き合わせて検証される。
+
+\paragraph{指標.}
+主要指標は Spearman 順位相関 \texttt{spearman\_rho}。支持指標は \texttt{kendall\_tau}、
+\texttt{precision\_at\_top\_10pct}（プロキシ上位 10\% のうち真の上位 10\% に入る割合）、
+\texttt{selection\_regret\_at\_1}（プロキシ最上位アーキテクチャの真精度と真の最良精度の差、ポイント）。
+これらはすべて外部の固定された評価層 airas-eval の \texttt{nas\_pre\_training} タスクが算出する。
+\textbf{実験コードは指標を一切計算せず}、プロキシスコア \texttt{predicted\_scores} と
+真値 \texttt{reference\_scores} を書き出すのみである。
+判定はすべて主要指標で行い、支持指標は解釈の補助にのみ用いる。
+
+\paragraph{実行環境.}
+Seyval の managed compute（\texttt{cpu-general}、x86\_64、GPU なし）を使用する。
+依存は \texttt{uv.lock} で固定（torch 2.11.0 の CPU ビルド）し、リポジトリの Dockerfile を
+そのままビルドして実行するため、コミットハッシュだけで実行環境が決まる。
+スケールは sanity = 10 アーキテクチャ / 1 シード、pilot = 200 / 3 シード、full = 1{,}000 / 3 シードとする。
+先行研究は GB200 GPU 上で実行されており、本研究の C3 は同一計算の CPU 再実行でもある。
+
+% ===== airas: post-experiment sections, filled once runs exist =====
+
+\section{結果}
+\label{sec:results}
+
+（実験実行後に記入する。主張 C1--C4 を第\ref{sec:claims}節で凍結した判定基準と予測区間に照らして報告する。）
+
+\InputIfFileExists{tables/zc_summary.tex}{}{}
+
+\section{考察}
+\label{sec:discussion}
+
+（実験実行後に記入する。）
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}
