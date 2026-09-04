@@ -10628,6 +10628,142 @@
               "renderer": "vl-convert-python 1.9.0"
             }
           ]
+        },
+        {
+          "path": "rho_by_condition_bars.png",
+          "format": "png",
+          "spec": {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "background": "#fcfcfb",
+            "width": 320,
+            "height": 200,
+            "padding": {
+              "left": 5,
+              "right": 15,
+              "top": 5,
+              "bottom": 5
+            },
+            "title": {
+              "text": "jacob_cov: Spearman rho with NAS-Bench-201 test accuracy",
+              "subtitle": "1000 architectures, 3 seeds, no training; only the input statistics differ",
+              "fontSize": 12,
+              "subtitleFontSize": 10,
+              "anchor": "start",
+              "color": "#1a1a19",
+              "subtitleColor": "#5c5b55"
+            },
+            "data": {
+              "values": [
+                {
+                  "condition": "cifar10 (real)",
+                  "order": "1",
+                  "rho": "metric:comparative-1-jacobcov-cifar10.spearman_rho"
+                },
+                {
+                  "condition": "cifar10 (seed rep.)",
+                  "order": "2",
+                  "rho": "metric:comparative-4-jacobcov-cifar10rep.spearman_rho"
+                },
+                {
+                  "condition": "phasescr",
+                  "order": "3",
+                  "rho": "metric:proposed-jacobcov-phasescr.spearman_rho"
+                },
+                {
+                  "condition": "pixshuf",
+                  "order": "4",
+                  "rho": "metric:comparative-2-jacobcov-pixshuf.spearman_rho"
+                },
+                {
+                  "condition": "randinput N(0,1)",
+                  "order": "5",
+                  "rho": "metric:comparative-3-jacobcov-randinput.spearman_rho"
+                }
+              ]
+            },
+            "layer": [
+              {
+                "mark": {
+                  "type": "bar",
+                  "color": "#4c78a8",
+                  "clip": true,
+                  "width": 40
+                },
+                "encoding": {
+                  "x": {
+                    "field": "condition",
+                    "type": "nominal",
+                    "title": "input condition",
+                    "sort": {
+                      "field": "order"
+                    },
+                    "axis": {
+                      "labelAngle": -20,
+                      "labelFontSize": 10,
+                      "labelPadding": 6
+                    }
+                  },
+                  "y": {
+                    "field": "rho",
+                    "type": "quantitative",
+                    "title": "Spearman rho",
+                    "scale": {
+                      "domain": [
+                        0.5,
+                        0.75
+                      ]
+                    },
+                    "axis": {
+                      "grid": true,
+                      "gridColor": "#e6e5e0"
+                    }
+                  }
+                }
+              },
+              {
+                "mark": {
+                  "type": "text",
+                  "dy": -6,
+                  "fontSize": 10,
+                  "color": "#1a1a19"
+                },
+                "encoding": {
+                  "x": {
+                    "field": "condition",
+                    "type": "nominal",
+                    "sort": {
+                      "field": "order"
+                    }
+                  },
+                  "y": {
+                    "field": "rho",
+                    "type": "quantitative"
+                  },
+                  "text": {
+                    "field": "rho",
+                    "type": "quantitative",
+                    "format": ".3f"
+                  }
+                }
+              }
+            ],
+            "config": {
+              "view": {
+                "stroke": null
+              },
+              "axis": {
+                "labelColor": "#1a1a19",
+                "titleColor": "#1a1a19",
+                "domainColor": "#c8c7c1",
+                "tickColor": "#c8c7c1"
+              }
+            }
+          },
+          "renders": [
+            {
+              "renderer": "vl-convert-python 1.9.0"
+            }
+          ]
         }
       ],
       "notes": [
