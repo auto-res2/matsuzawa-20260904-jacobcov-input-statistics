@@ -32,6 +32,17 @@
         "evaluate": "true"
       },
       "parameters": {}
+    },
+    "comparative-4-jacobcov-cifar10rep": {
+      "execution_id": "293a3448-d337-42aa-af34-f91989fb942f",
+      "commit_hash": "8b92355b6fa17c0501775a40371498377958d0be",
+      "overrides": {
+        "run": "comparative-4-jacobcov-cifar10rep",
+        "results_dir": ".research/results",
+        "mode": "full",
+        "evaluate": "true"
+      },
+      "parameters": {}
     }
   }
 }
