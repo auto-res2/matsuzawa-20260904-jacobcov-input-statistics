@@ -54,8 +54,14 @@ jobs:
         env:
           SEYVAL_API_KEY: ${{ secrets.SEYVAL_API_KEY }}
         run: |
+          # `airas verify-record` prints its JSON report to stdout (the
+          # --output-dir option was removed from this subcommand on
+          # 2026-09-04, airas commit 79d129fe); keep the report as an
+          # artifact by teeing it. pipefail preserves the gate's exit code.
+          mkdir -p record-artifact
           uvx --from "airas @ git+https://github.com/airas-org/airas.git@main#subdirectory=backend" \
-            airas verify-record --local-path . --output-dir record-artifact
+            airas verify-record --local-path . \
+            | tee record-artifact/record-verification-report.json
 
       # Uploaded on red as well, so a failure is readable and not only a
       # colour.
