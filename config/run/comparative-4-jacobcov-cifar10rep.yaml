@@ -1,0 +1,5 @@
+# @package run
+run_id: comparative-4-jacobcov-cifar10rep
+condition: cifar10
+seeds: [10, 11, 12]
+description: "jacob_cov / 実データ、シードのみ変更（シードノイズ床）"

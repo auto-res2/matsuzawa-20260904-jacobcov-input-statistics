@@ -1,1 +1,191 @@
-{}
+{
+ "research_topic": "jacob_cov (NASWOT 系 zero-cost proxy) の実データ依存は画像の二次統計で説明されるか: 位相スクランブル・画素シャッフルによる入力統計の統制実験 (NAS-Bench-201 / CIFAR-10, 学習なし)",
+ "queries": [
+  "zero-cost proxy NAS input data dependence",
+  "NASWOT jacobian covariance training-free",
+  "neural architecture search without training",
+  "zero-cost proxies bias parameter count evaluation",
+  "power spectrum natural images statistics"
+ ],
+ "research_study_list": [
+  {
+   "title": "Neural Architecture Search without Training",
+   "abstract": "Scores untrained networks by the overlap of ReLU activation codes across a mini-batch (log-determinant of a Hamming kernel); ablation with normally distributed random inputs shows 'little impact on the general trend' for 10 NAS-Bench-201 architectures.",
+   "meta_data": {
+    "authors": [
+     "Joseph Mellor",
+     "Jack Turner",
+     "Amos Storkey",
+     "Elliot J. Crowley"
+    ],
+    "arxiv_id": "2006.04647",
+    "venue": "ICML 2021",
+    "published_date": "2021"
+   }
+  },
+  {
+   "title": "Zero-Cost Proxies for Lightweight NAS",
+   "abstract": "Adapts pruning-at-initialization saliencies (snip, grasp, synflow, fisher, grad_norm) and jacob_cov as single-minibatch proxies; on NAS-Bench-201 CIFAR-10 synflow (data-free) reaches Spearman 0.74 and jacob_cov 0.73.",
+   "meta_data": {
+    "authors": [
+     "Mohamed S. Abdelfattah",
+     "Abhinav Mehrotra",
+     "Lukasz Dudziak",
+     "Nicholas D. Lane"
+    ],
+    "arxiv_id": "2101.08134",
+    "venue": "ICLR 2021",
+    "published_date": "2021"
+   }
+  },
+  {
+   "title": "NAS-Bench-Suite-Zero: Accelerating Research on Zero Cost Proxies",
+   "abstract": "Evaluates 13 zero-cost proxies across 28 tasks; bias analysis shows proxies are correlated with cell size / parameter count and captures complementary information.",
+   "meta_data": {
+    "authors": [
+     "Arjun Krishnakumar",
+     "Colin White",
+     "Arber Zela",
+     "Renbo Tu",
+     "Mahmoud Safari",
+     "Frank Hutter"
+    ],
+    "venue": "NeurIPS 2022 Datasets and Benchmarks",
+    "published_date": "2022"
+   }
+  },
+  {
+   "title": "Modelling the Power Spectra of Natural Images: Statistics and Information",
+   "abstract": "Natural images have approximately 1/f^2 power spectra (strong spatial correlation); classical reference for second-order statistics of natural images.",
+   "meta_data": {
+    "authors": [
+     "A. van der Schaaf",
+     "J. H. van Hateren"
+    ],
+    "doi": "10.1016/0042-6989(96)00002-8",
+    "venue": "Vision Research",
+    "published_date": "1996"
+   }
+  },
+  {
+   "title": "NAS-Bench-201: Extending the Scope of Reproducible Neural Architecture Search",
+   "abstract": "Tabular benchmark of 15,625 cell architectures trained on CIFAR-10/100 and ImageNet-16-120; provides the reference test accuracies used here.",
+   "meta_data": {
+    "authors": [
+     "Xuanyi Dong",
+     "Yi Yang"
+    ],
+    "arxiv_id": "2001.00326",
+    "venue": "ICLR 2020",
+    "published_date": "2020"
+   }
+  },
+  {
+   "title": "Revisiting Training-free NAS Metrics: An Efficient Training-based Method",
+   "abstract": "Shows that much of the ranking ability of training-free metrics on NAS-Bench-201 comes from correlation with the number of parameters.",
+   "meta_data": {
+    "authors": [
+     "Taojiannan Yang",
+     "Linjie Yang",
+     "Xiaojie Jin",
+     "Chen Chen"
+    ],
+    "venue": "WACV 2023",
+    "published_date": "2023"
+   }
+  },
+  {
+   "title": "ゼロコストプロキシは入力データを見ているか: NAS-Bench-201 における乱数入力置換の事前登録付き検証 (AIRAS, 2026-09-03)",
+   "abstract": "本研究の直接の先行研究。同一の 1,000 アーキテクチャ・同一シードで入力を実 CIFAR-10 から N(0,1) 乱数に置換し、jacob_cov で Δρ = 0.110 (実データ依存あり、基準 0.10 を僅差で超過)、snip で −0.048 (依存なし)、synflow で 0 (構成上入力を使わない) を得た。シード複製の差は 0.002。",
+   "meta_data": {
+    "github_url": "https://github.com/auto-res2/matsuzawa-20260903-zc-proxy-input-invariance",
+    "published_date": "2026-09-03"
+   }
+  }
+ ],
+ "research_hypothesis": {
+  "open_problems": "先行研究 (2026-09-03) は jacob_cov の順位付け能力が実データに依存すること (実 CIFAR-10 → N(0,1) 乱数で Spearman ρ が 0.110 低下) を示したが、実データの「何」を jacob_cov が利用しているかは未解明である。候補は二つある。(a) 自然画像の二次統計、すなわち 1/f 型のパワースペクトル (= 強い空間自己相関) であり、これは意味内容を持たない乱数場でも再現できる。(b) 物体やエッジの配置といった意味内容であり、これは二次統計を保っただけでは再現できない。Mellor らの乱数入力アブレーションも先行研究の N(0,1) 置換も、二次統計と意味内容を同時に破壊しているため両者を区別できない。",
+  "method": "同一の 1,000 アーキテクチャ (NAS-Bench-201、抽出シード 2026) と同一の初期化シード [0,1,2] に対し、jacob_cov に渡す入力テンソルの統計構造だけを 4 段階に統制する。(1) cifar10: 実ミニバッチ (batch 128)。(2) phasescr: 各画像の 2 次元フーリエ振幅スペクトルを厳密に保ち位相を乱数化した位相スクランブル画像 (二次統計は画像ごとに完全保存、意味内容は破壊)。(3) pixshuf: 画像ごとに 1 つの空間置換を 3 チャネル共通に適用した画素シャッフル画像 (画素値の周辺分布とチャネル間相関は完全保存、空間相関は破壊)。(4) randinput: N(0,1) 乱数テンソル (先行研究の再現)。全条件は同一シードの同一実バッチから派生し、形状・dtype を共有する。ネットワークの学習は行わない (forward/backward 各 1 回のみ)。",
+  "experimental_setup": "探索空間: NAS-Bench-201 の 1,000 アーキテクチャ (ソート済み cell 文字列から default_rng(2026) で非復元一様抽出; 先行研究と同一集合)。真値: NAS-Bench-201 公表の CIFAR-10 テスト精度 (eval_acc1es)。真値表 (1,000 件) と各シードの 128 枚バッチ (uint8) はリポジトリの data/ に同梱し、外部キャッシュもダウンロードも使わない。プロキシ: jacob_cov (先行研究と同一実装; 入力ヤコビアンの相関行列の固有値から -Σ(log(v+k)+1/(v+k)), k=1e-5)。各 run は 3 シードでスコアを計算し平均する。指標はすべて airas-eval 0.10.0 の nas_pre_training タスクが算出し、実験コードは predicted_scores / reference_scores を書き出すのみ。実行: Seyval managed compute cpu-general (x86_64, GPU なし)、torch 2.11.0 CPU ビルド、uv.lock と自前 Dockerfile で環境固定。run: proposed-jacobcov-phasescr, comparative-1-jacobcov-cifar10, comparative-2-jacobcov-pixshuf, comparative-3-jacobcov-randinput, comparative-4-jacobcov-cifar10rep (seeds [10,11,12], ノイズ床)。スケール: sanity = 10 アーキ / 1 シード, pilot = 200 / 3, full = 1000 / 3。",
+  "primary_metric": "spearman_rho",
+  "supporting_metrics": [
+   "kendall_tau",
+   "precision_at_top_10pct",
+   "selection_regret_at_1",
+   "best_true_rank_in_top_10"
+  ],
+  "expected_result": "C1: ρ_real − ρ_phasescr ≤ 0.05 (予測区間 −0.02〜0.04)。C2: ρ_real − ρ_pixshuf ≥ 0.06 (予測区間 0.07〜0.14)。C3: |ρ_pixshuf − ρ_randinput| ≤ 0.05 (予測区間 −0.03〜0.03)。C4 (再現): ρ_real − ρ_randinput ≥ 0.06 (予測区間 0.09〜0.13; 先行研究 0.110)。C5 (ノイズ床): |ρ_real − ρ_cifar10rep| ≤ 0.03 (予測区間 0.00〜0.02; 先行研究 0.002)。",
+  "expected_conclusion": "jacob_cov が実データから利用しているのは画像の二次統計 (振幅スペクトル = 空間自己相関) であり、意味内容は必要としない。位相スクランブル入力は実データと同等の順位付け能力を与え、画素シャッフル入力は白色雑音と同等まで落ちる。したがって jacob_cov の「データ依存」は自然画像統計に従う合成入力で代替可能である。"
+ },
+ "experiment_history": {
+  "cycles": [
+   {
+    "run_stage": "full",
+    "experimental_design": {
+     "proposed_method": {
+      "method_name": "proposed-jacobcov-phasescr",
+      "description": "jacob_cov を位相スクランブル入力 (振幅スペクトル保存・位相乱数化) で計算。seeds=[0,1,2] の平均スコア。"
+     },
+     "comparative_methods": [
+      {
+       "method_name": "comparative-1-jacobcov-cifar10",
+       "description": "jacob_cov を実 CIFAR-10 ミニバッチ (batch 128) で計算。seeds=[0,1,2]。参照条件。"
+      },
+      {
+       "method_name": "comparative-2-jacobcov-pixshuf",
+       "description": "jacob_cov を画素シャッフル入力 (周辺分布保存・空間相関破壊) で計算。seeds=[0,1,2]。"
+      },
+      {
+       "method_name": "comparative-3-jacobcov-randinput",
+       "description": "jacob_cov を N(0,1) 乱数入力で計算。seeds=[0,1,2]。先行研究の再現。"
+      },
+      {
+       "method_name": "comparative-4-jacobcov-cifar10rep",
+       "description": "jacob_cov を実 CIFAR-10 で計算、seeds=[10,11,12]。初期化と入力ドローだけを変えたノイズ床。"
+      }
+     ],
+     "models_to_use": [
+      "NAS-Bench-201 TinyNetwork (C=16, N=5), 1,000 cells, untrained"
+     ],
+     "datasets_to_use": [
+      "CIFAR-10 (128-image batches per seed, committed in data/)",
+      "NAS-Bench-201 tabular benchmark (cifar10 eval_acc1es subset, committed in data/)"
+     ],
+     "evaluation_metrics": [
+      {
+       "name": "spearman_rho",
+       "description": "主要指標。proxy スコアと真のテスト精度の Spearman 順位相関 (airas-eval nas_pre_training)。各主張は 2 run の spearman_rho の差で判定する。"
+      },
+      {
+       "name": "kendall_tau",
+       "description": "支持指標。Kendall τ (airas-eval)。"
+      },
+      {
+       "name": "precision_at_top_10pct",
+       "description": "支持指標。proxy 上位 10% のうち真の上位 10% に入る割合 (airas-eval)。"
+      },
+      {
+       "name": "selection_regret_at_1",
+       "description": "支持指標。proxy 最上位アーキの真精度と真の最良精度の差 (airas-eval)。"
+      }
+     ],
+     "compute_environment": {
+      "description": "Seyval managed compute cpu-general (x86_64, no GPU). torch 2.11.0 CPU wheels pinned by uv.lock; user Dockerfile built by Seyval.",
+      "arch": "x86_64",
+      "gpu_count": 0
+     },
+     "experiment_summary": "介入: 同一アーキ集合・同一シードで、jacob_cov の入力だけを cifar10 / phasescr / pixshuf / randinput に差し替える。学習は 0 エポック。判定基準 (凍結): C1 ρ_real−ρ_phasescr ≤ 0.05; C2 ρ_real−ρ_pixshuf ≥ 0.06; C3 |ρ_pixshuf−ρ_randinput| ≤ 0.05; C4 ρ_real−ρ_randinput ≥ 0.06; C5 |ρ_real−ρ_rep| ≤ 0.03。予測区間は research_hypothesis.expected_result に記す。"
+    }
+   }
+  ]
+ },
+ "additional_data": {
+  "compute_platform": "seyval",
+  "compute_id": "managed:cpu-general",
+  "arch": "x86_64",
+  "predecessor_repositories": [
+   "https://github.com/auto-res2/matsuzawa-20260902-zc-proxy-input-invariance",
+   "https://github.com/auto-res2/matsuzawa-20260903-zc-proxy-input-invariance"
+  ]
+ }
+}

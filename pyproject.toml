@@ -1,23 +1,34 @@
-# Please list the required python packages in `dependencies` below.
-# Keep this file limited to dependencies (hydra-core, wandb, plus
-# task-specific libraries).
+# 依存のみ。実行環境は uv.lock と Dockerfile で固定される。
 
 [project]
 name = "experiment"
 version = "0.1.0"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.12"
 dependencies = [
     "hydra-core",
     "wandb",
+    # CPU 専用ビルド。実行先は Seyval managed cpu-general (x86_64, GPU なし) で、
+    # 既定の PyPI torch は CUDA 一式 (数 GB) を引くためイメージ配送が支配的になる。
+    "torch==2.11.0",
+    "numpy",
+    "matplotlib",
 ]
 
-# `src/` is run with `uv run python -m src.main` from the repository root,
-# never installed as a distribution, so this project is not a package.
+# `src/` は `uv run python -m src.main` でリポジトリ root から実行され、
+# 配布物としてインストールされることはない。
 [tool.uv]
 package = false
 
-# Evaluation layer (managed by AIRAS). Pinned so the reported metrics are
-# reproducible; experiment code must NOT import airas_eval — it is invoked only
-# through `make evaluate` / the airas-eval CLI on the eval_inputs files.
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+# 評価層 (AIRAS 管理)。報告される指標を再現可能にするためピンする。
+# 実験コードは airas_eval を import してはならない — `make evaluate` /
+# airas-eval CLI から eval_inputs のファイルに対してのみ起動される。
 [dependency-groups]
 eval = ["airas-eval==0.10.0"]

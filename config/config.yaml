@@ -1,18 +1,48 @@
-# Main configuration for Hydra
-# This file will be populated by AI code generator based on experimental design
-
+# 共通設定。run= で config/run/*.yaml を 1 つ選ぶ。
 defaults:
   - _self_
-  - run: ???  # loads from config/run/, accessible as 'run=' in CLI
+  - run: ???
 
-# Execution mode: full, sanity, or pilot
+# 実行モード: full / sanity / pilot
 mode: full
 
-# Results output directory
+# 結果出力先
 results_dir: .research/results
 
-# WandB configuration (will be set by AI agent)
+# true にすると src.main が推論のあとに `make evaluate` と src.evaluate を同じ
+# プロセス木で続けて走らせ、1 回の dispatch で metrics.json まで書く。
+evaluate: false
+
+# モード別スケール。データセットとモデルはモードによらず同一で、規模だけを縮める。
+modes:
+  sanity:
+    n_archs: 10
+    seeds_limit: 1
+  pilot:
+    n_archs: 200
+    seeds_limit: 3
+  full:
+    n_archs: 1000
+    seeds_limit: 3
+
+data:
+  # リポジトリ同梱の固定抽出物 (data/README.md)。外部キャッシュには依存しない。
+  reference_table: data/nb201_cifar10_subset.json
+  cifar_batches: data/cifar10_batches.npz
+  batch_size: 128
+
+# src/evaluate.py 用（run= とは独立に集計対象を渡す）
+run_ids: []
+
 wandb:
-  entity: ???
-  project: ???
-  mode: online
+  entity: ""
+  project: jacobcov-input-statistics
+  # 資格情報に依存せず実行できるよう既定は offline。
+  # W&B は補助的なログであり、報告される指標の出所は airas-eval のみである。
+  mode: offline
+
+hydra:
+  run:
+    dir: .logs/${run.run_id}/${mode}
+  job:
+    chdir: false

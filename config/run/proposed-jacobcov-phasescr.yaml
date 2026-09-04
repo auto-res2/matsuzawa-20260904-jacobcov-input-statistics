@@ -1,0 +1,5 @@
+# @package run
+run_id: proposed-jacobcov-phasescr
+condition: phasescr
+seeds: [0, 1, 2]
+description: "jacob_cov / 位相スクランブル入力（振幅スペクトル保存・意味内容破壊）"

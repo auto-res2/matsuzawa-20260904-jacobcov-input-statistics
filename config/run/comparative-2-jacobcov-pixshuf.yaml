@@ -1,0 +1,5 @@
+# @package run
+run_id: comparative-2-jacobcov-pixshuf
+condition: pixshuf
+seeds: [0, 1, 2]
+description: "jacob_cov / 画素シャッフル入力（周辺分布保存・空間相関破壊）"

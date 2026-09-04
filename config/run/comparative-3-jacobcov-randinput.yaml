@@ -1,0 +1,5 @@
+# @package run
+run_id: comparative-3-jacobcov-randinput
+condition: randinput
+seeds: [0, 1, 2]
+description: "jacob_cov / N(0,1) 乱数入力（前研究の再現）"

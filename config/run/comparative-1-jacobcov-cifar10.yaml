@@ -1,0 +1,5 @@
+# @package run
+run_id: comparative-1-jacobcov-cifar10
+condition: cifar10
+seeds: [0, 1, 2]
+description: "jacob_cov / 実 CIFAR-10 ミニバッチ（参照条件）"

@@ -200,3 +200,8 @@ models/
 # .reproduction/ are committed by the workflows; the cloned paper repo and paper source are not.
 .reproduction/*/repo/
 .reproduction/*/tex_src/
+
+# Committed inputs of this study (small, derived from public benchmarks; see data/README.md)
+!data/
+!data/nb201_cifar10_subset.json
+!data/cifar10_batches.npz
